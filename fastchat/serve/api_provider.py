@@ -21,9 +21,13 @@ def openai_api_stream_iter(
     api_key=None,
 ):
     import openai
+    from openai import OpenAI
+    
+    client = OpenAI(api_key=api_key or os.environ["OPENAI_API_KEY"])
 
-    openai.api_base = api_base or "https://api.openai.com/v1"
-    openai.api_key = api_key or os.environ["OPENAI_API_KEY"]
+    # TODO: The 'openai.api_base' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(api_base=api_base or "https://api.openai.com/v1")'
+    # openai.api_base = api_base or "https://api.openai.com/v1"
+    
     if model_name == "gpt-4-turbo":
         model_name = "gpt-4-1106-preview"
 
@@ -37,13 +41,11 @@ def openai_api_stream_iter(
     }
     logger.info(f"==== request ====\n{gen_params}")
 
-    res = openai.ChatCompletion.create(
-        model=model_name,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_new_tokens,
-        stream=True,
-    )
+    res = client.chat.completions.create(model=model_name,
+    messages=messages,
+    temperature=temperature,
+    max_tokens=max_new_tokens,
+    stream=True)
     text = ""
     for chunk in res:
         text += chunk["choices"][0]["delta"].get("content", "")
