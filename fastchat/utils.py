@@ -148,17 +148,21 @@ def oai_moderation(text):
     Check whether the text violates OpenAI moderation API.
     """
     import openai
+    from openai import OpenAI
+    
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    openai.api_base = "https://api.openai.com/v1"
-    openai.api_key = os.environ["OPENAI_API_KEY"]
+    # TODO: The 'openai.api_base' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(api_base="https://api.openai.com/v1")'
+    # openai.api_base = "https://api.openai.com/v1"
+    
 
     MAX_RETRY = 3
     for i in range(MAX_RETRY):
         try:
-            res = openai.Moderation.create(input=text)
+            res = client.moderations.create(input=text)
             flagged = res["results"][0]["flagged"]
             break
-        except (openai.error.OpenAIError, KeyError, IndexError) as e:
+        except (openai.OpenAIError, KeyError, IndexError) as e:
             # flag true to be conservative
             flagged = True
             print(f"MODERATION ERROR: {e}\nInput: {text}")
