@@ -84,7 +84,7 @@ def load_demo(url_params, request: gr.Request):
             vision_arena=True,
         )
 
-    single_updates = load_demo_single(models, url_params)
+    single_updates = load_demo_single(vl_models, url_params)
     side_by_side_anony_updates = load_demo_side_by_side_anony(all_models, url_params)
     side_by_side_named_updates = load_demo_side_by_side_named(models, url_params)
 
@@ -149,8 +149,8 @@ window.__gradio_mode__ = "app";
 
             with gr.Tab("💬 Direct Chat", id=3) as direct_tab:
                 direct_tab.select(None, None, None, js=alert_js)
-                single_model_list = build_single_model_ui(
-                    models, add_promotion_links=True
+                single_model_list = build_single_vision_language_model_ui(
+                    vl_models, add_promotion_links=True
                 )
 
             demo_tabs = (

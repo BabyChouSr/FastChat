@@ -359,6 +359,7 @@ def model_worker_stream_iter(
     gen_params = {
         "model": model_name,
         "prompt": prompt,
+        "conv": conv.to_openai_api_messages(),
         "temperature": temperature,
         "repetition_penalty": repetition_penalty,
         "top_p": top_p,

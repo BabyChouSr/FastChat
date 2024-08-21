@@ -7,7 +7,7 @@ See documentations at docs/vllm_integration.md
 import argparse
 import asyncio
 import json
-from typing import List
+from typing import List, Dict
 
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -15,10 +15,12 @@ import uvicorn
 from vllm import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.model_executor.models import ModelRegistry
+from vllm.multimodal.utils import load_image_from_base64
 from vllm.sampling_params import SamplingParams
 from vllm.utils import random_uuid
 
 from fastchat.serve.base_model_worker import BaseModelWorker
+from fastchat.conversation import Conversation
 from fastchat.serve.model_worker import (
     logger,
     worker_id,
@@ -50,6 +52,7 @@ class VLLMWorker(BaseModelWorker):
             model_names,
             limit_worker_concurrency,
             conv_template,
+            True
         )
 
         logger.info(
@@ -65,10 +68,27 @@ class VLLMWorker(BaseModelWorker):
         if not no_register:
             self.init_heart_beat()
 
+    def _conversation_to_vllm_format(self, conv: List[Dict[str, str]], images: List[str]):
+        # tokenize
+        prompt = self.tokenizer.apply_chat_template(
+            conversation=conv,
+            tokenize=False,
+        )
+        engine_inputs: PromptInput = {
+            "prompt": prompt
+        }
+
+        if images:
+            engine_inputs["multi_modal_data"] = {"image": load_image_from_base64(images[0])}
+
+        return engine_inputs
+
     async def generate_stream(self, params):
         self.call_ct += 1
 
-        context = params.pop("prompt")
+        # context = params.pop("prompt")
+        conv = params.pop("conv", None)
+        images = params.pop("images", None)
         request_id = params.pop("request_id")
         temperature = float(params.get("temperature", 1.0))
         top_p = float(params.get("top_p", 1.0))
@@ -117,7 +137,9 @@ class VLLMWorker(BaseModelWorker):
             frequency_penalty=frequency_penalty,
             best_of=best_of,
         )
-        results_generator = engine.generate(context, sampling_params, request_id)
+
+        engine_input = self._conversation_to_vllm_format(conv, images)
+        results_generator = engine.generate(engine_input, sampling_params, request_id)
 
         async for request_output in results_generator:
             prompt = request_output.prompt

@@ -80,6 +80,9 @@ class Conversation:
             ret = system_prompt + self.sep
             for role, message in self.messages:
                 if message:
+                    if type(message) is tuple:
+                        message, images = message
+                        message = IMAGE_PLACEHOLDER_STR * len(images) + message
                     ret += role + ": " + message + self.sep
                 else:
                     ret += role + ":"
@@ -424,7 +427,11 @@ class Conversation:
 
         for i, (_, msg) in enumerate(self.messages[self.offset :]):
             if i % 2 == 0:
-                ret.append({"role": "user", "content": msg})
+                if type(msg) is tuple:
+                    text, images = msg[0], msg[1]
+                    ret.append({"role": "user", "content": text})
+                else:
+                    ret.append({"role": "user", "content": msg})
             else:
                 if msg is not None:
                     ret.append({"role": "assistant", "content": msg})
