@@ -354,12 +354,14 @@ def model_worker_stream_iter(
     top_p,
     max_new_tokens,
     images,
+    messages_in_openai_format,
 ):
     # Make requests
+    # Deepcopy conv because we update conv with the html_code and we don't want to be affected by that
     gen_params = {
         "model": model_name,
         "prompt": prompt,
-        "conv": conv.to_openai_api_messages(),
+        "conv": messages_in_openai_format,
         "temperature": temperature,
         "repetition_penalty": repetition_penalty,
         "top_p": top_p,
@@ -479,6 +481,7 @@ def bot_response(
             top_p,
             max_new_tokens,
             images,
+            list(conv.to_openai_vision_api_messages())
         )
     else:
         # Remove system prompt for API-based models unless specified
